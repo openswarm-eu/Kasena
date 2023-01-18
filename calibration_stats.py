@@ -1,7 +1,13 @@
+"""
+Utility script for calibration of the devices.
+"""
+
+
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings
+import datetime
 
 warnings.filterwarnings("ignore")
 
@@ -14,12 +20,15 @@ def get_cropped_dataset(filename, N):
     with open(f"{filename}") as f:
         lines = f.readlines()[1:]
         for line in lines:
-            mac, _, temp = line.strip().split(",")
+            mac, timestamp, temp = line.strip().split(",")
+            dt_format = "%Y-%m-%d %H:%M:%S.%f"
+            timestamp = datetime.datetime.strptime(timestamp, dt_format)
             temp = float(temp)
 
             if mac not in dataset:
                 dataset[mac] = {
                     "samples": [],
+                    "timestamps": [],
                     "mean": 0.0,
                     "median": 0.0,
                     "stddev": 0.0,
@@ -28,6 +37,7 @@ def get_cropped_dataset(filename, N):
 
             if N < 0 or len(dataset[mac]["samples"]) < N:
                 dataset[mac]["samples"].append(temp)
+                dataset[mac]["timestamps"].append(timestamp)
 
     # if N < 0 is provided then we take the min_samples_len as its value
     if N < 0:
@@ -194,6 +204,8 @@ def main(inside_csv, outside_csv, gt_in, gt_out, N):
     generate_output_csv(dataset_in, gt_in, f"results_in_office.csv")
     generate_output_csv(dataset_out, gt_out, f"results_out_office.csv")
 
+    for name in dataset_in:
+        print(get_device_name(name))
 
 if __name__ == "__main__":
     inside_csv, outside_csv, gt_in, gt_out, N = sys.argv[1:]
